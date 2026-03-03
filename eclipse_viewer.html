@@ -1,0 +1,2441 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Celestial Observer — Eclipse Atlas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400;1,700&family=IM+Fell+English:ital@0;1&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #0e0b08;
+        --parchment: #1a1510;
+        --sepia: #241d14;
+        --vellum: #2e2418;
+        --aged: #3d3020;
+        --bronze: #8b6914;
+        --gold: #c9922a;
+        --gilt: #e8b84b;
+        --amber: #f5d06a;
+        --cream: #f0e6c8;
+        --ivory: #ede0c0;
+        --warm-gray: #8a7d6a;
+        --rust: #8b3a1a;
+        --lunar-silver: #c8c0b0;
+        --lunar-shadow: #6a6058;
+        --solar-core: #fff5d0;
+        --solar-mid: #f5c842;
+        --solar-outer: #d4841a;
+        --earth-sea: #1a4a6b;
+        --earth-land: #3a5c30;
+        --glass: rgba(240, 230, 200, 0.03);
+        --border: rgba(200, 160, 80, 0.15);
+        --border-warm: rgba(200, 160, 80, 0.25);
+      }
+
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html {
+        font-size: 16px;
+      }
+      body {
+        background: var(--ink);
+        color: var(--ivory);
+        font-family: "Crimson Text", Georgia, serif;
+        font-size: 1rem;
+        line-height: 1.7;
+        overflow-x: hidden;
+        cursor: crosshair;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+        background-size: 200px 200px;
+        opacity: 0.3;
+        mix-blend-mode: overlay;
+      }
+      #starfield {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+      }
+      .vignette {
+        position: fixed;
+        inset: 0;
+        z-index: 2;
+        pointer-events: none;
+        background: radial-gradient(
+          ellipse at center,
+          transparent 35%,
+          rgba(8, 5, 3, 0.88) 100%
+        );
+      }
+      .wrap {
+        position: relative;
+        z-index: 5;
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 0 1.8rem 4rem;
+      }
+
+      /* MASTHEAD */
+      .masthead {
+        text-align: center;
+        padding: 2.5rem 2rem 2rem;
+        position: relative;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 2rem;
+      }
+      .masthead::before {
+        content: "✦  ANNO DOMINI  ✦";
+        display: block;
+        font-family: "Cormorant Garamond", serif;
+        font-size: 0.65rem;
+        letter-spacing: 0.45em;
+        color: var(--bronze);
+        margin-bottom: 0.7rem;
+      }
+      .masthead-title {
+        font-family: "Playfair Display", serif;
+        font-size: clamp(2rem, 4.5vw, 3.6rem);
+        font-weight: 900;
+        line-height: 1.05;
+        color: var(--cream);
+        letter-spacing: -0.01em;
+      }
+      .masthead-title em {
+        font-style: italic;
+        color: var(--gilt);
+        display: block;
+      }
+      .masthead-sub {
+        font-family: "IM Fell English", serif;
+        font-style: italic;
+        font-size: 0.95rem;
+        color: var(--warm-gray);
+        margin-top: 0.5rem;
+        letter-spacing: 0.04em;
+      }
+      .masthead-ornament {
+        font-size: 1.1rem;
+        color: var(--bronze);
+        margin-top: 0.9rem;
+        letter-spacing: 0.9rem;
+        user-select: none;
+      }
+      .live-time {
+        position: absolute;
+        top: 1rem;
+        right: 1.5rem;
+        font-family: "Cormorant Garamond", serif;
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        color: var(--bronze);
+        text-align: right;
+      }
+      .live-time span {
+        display: block;
+        font-size: 1rem;
+        color: var(--gilt);
+        font-weight: 600;
+      }
+
+      /* LOCATION */
+      .location-row {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        background: var(--glass);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        padding: 0.85rem 1.3rem;
+        margin-bottom: 1.8rem;
+        flex-wrap: wrap;
+      }
+      .loc-label {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 0.65rem;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--bronze);
+        white-space: nowrap;
+      }
+      .loc-val {
+        font-family: "Crimson Text", serif;
+        font-size: 0.95rem;
+        color: var(--cream);
+        flex: 1;
+        min-width: 160px;
+      }
+      .search-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+      }
+      .search-input {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        padding: 0.5rem 0.9rem;
+        color: var(--ivory);
+        font-family: "Crimson Text", serif;
+        font-size: 0.9rem;
+        outline: none;
+        transition: border-color 0.3s;
+      }
+      .search-input:focus {
+        border-color: var(--gold);
+      }
+      .search-input::placeholder {
+        color: var(--warm-gray);
+        font-style: italic;
+      }
+      .search-drop {
+        position: absolute;
+        top: 108%;
+        left: 0;
+        right: 0;
+        background: #1e1810;
+        border: 1px solid var(--border-warm);
+        border-radius: 3px;
+        max-height: 270px;
+        overflow-y: auto;
+        z-index: 300;
+        display: none;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+      }
+      .search-drop.open {
+        display: block;
+      }
+      .drop-item {
+        padding: 0.55rem 0.9rem;
+        cursor: pointer;
+        font-family: "Crimson Text", serif;
+        font-size: 0.9rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.15s;
+      }
+      .drop-item:hover {
+        background: rgba(200, 160, 80, 0.09);
+        color: var(--gilt);
+      }
+      .drop-tag {
+        font-size: 0.65rem;
+        color: var(--warm-gray);
+        font-style: italic;
+      }
+      .geo-btn {
+        background: transparent;
+        border: 1px solid var(--bronze);
+        color: var(--gold);
+        padding: 0.45rem 1rem;
+        border-radius: 3px;
+        cursor: pointer;
+        font-family: "Cormorant Garamond", serif;
+        font-size: 0.76rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        transition: all 0.3s;
+        white-space: nowrap;
+      }
+      .geo-btn:hover {
+        background: rgba(200, 160, 80, 0.1);
+        border-color: var(--gilt);
+        color: var(--gilt);
+      }
+
+      /* PREVIEW BANNER */
+      .preview-banner {
+        display: none;
+        background: linear-gradient(
+          135deg,
+          rgba(139, 105, 20, 0.14),
+          rgba(200, 160, 80, 0.05)
+        );
+        border: 1px solid var(--border-warm);
+        border-radius: 3px;
+        padding: 0.65rem 1.3rem;
+        margin-bottom: 1.4rem;
+        font-family: "IM Fell English", serif;
+        font-style: italic;
+        font-size: 0.92rem;
+        color: var(--gilt);
+        align-items: center;
+        gap: 1rem;
+      }
+      .preview-banner.vis {
+        display: flex;
+      }
+      .preview-banner button {
+        margin-left: auto;
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--warm-gray);
+        padding: 0.28rem 0.75rem;
+        border-radius: 3px;
+        cursor: pointer;
+        font-family: "Cormorant Garamond", serif;
+        font-size: 0.72rem;
+        letter-spacing: 0.1em;
+        transition: all 0.2s;
+      }
+      .preview-banner button:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+      }
+
+      /* GRID */
+      .main-grid {
+        display: grid;
+        grid-template-columns: 1fr 370px;
+        gap: 1.8rem;
+      }
+      @media (max-width: 1050px) {
+        .main-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* PANELS */
+      .panel {
+        background: var(--glass);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .panel-hdr {
+        padding: 0.9rem 1.4rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+      }
+      .panel-heading {
+        font-family: "Playfair Display", serif;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--gold);
+      }
+      .panel-sub {
+        font-family: "IM Fell English", serif;
+        font-style: italic;
+        font-size: 0.78rem;
+        color: var(--warm-gray);
+      }
+
+      /* ORRERY */
+      #orrery {
+        width: 100%;
+        display: block;
+        height: 440px;
+      }
+      .orrery-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-top: 1px solid var(--border);
+      }
+      .o-stat {
+        padding: 0.85rem 0.9rem;
+        border-right: 1px solid var(--border);
+        text-align: center;
+      }
+      .o-stat:last-child {
+        border-right: none;
+      }
+      .o-stat-val {
+        font-family: "Playfair Display", serif;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--gilt);
+        display: block;
+      }
+      .o-stat-lbl {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 0.58rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--warm-gray);
+        margin-top: 0.1rem;
+        display: block;
+      }
+      @media (max-width: 700px) {
+        .orrery-stats {
+          grid-template-columns: 1fr 1fr;
+        }
+        #orrery {
+          height: 300px;
+        }
+      }
+
+      /* INFO TABS */
+      .info-panel {
+        background: var(--glass);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        margin-top: 1.4rem;
+        overflow: hidden;
+      }
+      .tab-bar {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+        overflow-x: auto;
+      }
+      .tab-btn {
+        padding: 0.75rem 1.1rem;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--warm-gray);
+        font-family: "Cormorant Garamond", serif;
+        font-size: 0.74rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s;
+        margin-bottom: -1px;
+      }
+      .tab-btn:hover {
+        color: var(--gold);
+      }
+      .tab-btn.active {
+        color: var(--gilt);
+        border-bottom-color: var(--gilt);
+      }
+      .tab-body {
+        padding: 1.6rem;
+      }
+      .tab-pane {
+        display: none;
+      }
+      .tab-pane.active {
+        display: block;
+        animation: fadeUp 0.32s ease;
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .tab-pane h3 {
+        font-family: "Playfair Display", serif;
+        font-size: 1.15rem;
+        font-style: italic;
+        color: var(--cream);
+        margin-bottom: 0.75rem;
+      }
+      .tab-pane p {
+        font-size: 0.93rem;
+        color: var(--ivory);
+        line-height: 1.8;
+        margin-bottom: 0.85rem;
+      }
+      .fact-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-top: 0.9rem;
+      }
+      .fact-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border);
+        border-radius: 2px;
+        padding: 0.85rem 0.95rem;
+      }
+      .fact-card h4 {
+        font-family: "Playfair Display", serif;
+        font-size: 0.76rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 0.35rem;
+      }
+      .fact-card p {
+        font-size: 0.82rem;
+        color: var(--warm-gray);
+        line-height: 1.6;
+        margin: 0;
+      }
+      .type-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+        margin-top: 0.9rem;
+      }
+      .type-badge {
+        border: 1px solid var(--border);
+        border-radius: 2px;
+        padding: 0.9rem;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .type-badge .icon {
+        font-size: 1.5rem;
+        margin-bottom: 0.4rem;
+      }
+      .type-badge h4 {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 0.66rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 0.35rem;
+      }
+      .type-badge p {
+        font-size: 0.76rem;
+        color: var(--warm-gray);
+        line-height: 1.5;
+        margin: 0;
+      }
+
+      /* SIDEBAR */
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1.4rem;
+      }
+
+      /* ECLIPSE CARD */
+      .eclipse-section {
+        background: var(--glass);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .eclipse-toggle {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+      .etoggle {
+        padding: 0.82rem;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        font-family: "Cormorant Garamond", serif;
+        font-size: 0.72rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--warm-gray);
+        transition: all 0.25s;
+        margin-bottom: -1px;
+      }
+      .etoggle:hover {
+        color: var(--gold);
+      }
+      .etoggle.solar.active {
+        color: var(--solar-mid);
+        border-bottom-color: var(--solar-mid);
+        background: rgba(245, 200, 66, 0.04);
+      }
+      .etoggle.lunar.active {
+        color: var(--lunar-silver);
+        border-bottom-color: var(--lunar-silver);
+        background: rgba(200, 192, 176, 0.04);
+      }
+      .eclipse-divider {
+        border-top: 1px solid var(--border);
+      }
+      .eclipse-body {
+        padding: 1.4rem;
+      }
+
+      .e-next-lbl {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 0.62rem;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--bronze);
+        margin-bottom: 0.35rem;
+      }
+      .e-date {
+        font-family: "Playfair Display", serif;
+        font-size: 1.55rem;
+        font-weight: 700;
+        line-height: 1.1;
+        margin-bottom: 0.25rem;
+      }
+      .solar-m .e-date {
+        color: var(--gilt);
+      }
+      .lunar-m .e-date {
+        color: var(--lunar-silver);
+      }
+      .e-type {
+        font-family: "IM Fell English", serif;
+        font-style: italic;
+        font-size: 0.88rem;
+        color: var(--warm-gray);
+        margin-bottom: 1.1rem;
+      }
+
+      /* COUNTDOWN */
+      .cdown {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.45rem;
+        margin-bottom: 1.2rem;
+      }
+      .c-unit {
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid var(--border);
+        border-radius: 2px;
+        padding: 0.55rem 0.25rem;
+        text-align: center;
+      }
+      .c-num {
+        font-family: "Playfair Display", serif;
+        font-size: 1.45rem;
+        font-weight: 900;
+        line-height: 1;
+        display: block;
+      }
+      .solar-m .c-num {
+        color: var(--gilt);
+      }
+      .lunar-m .c-num {
+        color: var(--lunar-silver);
+      }
+      .c-lbl {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 0.56rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--warm-gray);
+        display: block;
+        margin-top: 0.18rem;
+      }
+
+      /* DETAILS */
+      .e-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.55rem;
+        margin-bottom: 0.9rem;
+      }
+      .e-det {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--border);
+        border-radius: 2px;
+        padding: 0.6rem 0.75rem;
+      }
+      .e-det-lbl {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 0.58rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--bronze);
+        margin-bottom: 0.2rem;
+      }
+      .e-det-val {
+        font-family: "Crimson Text", serif;
+        font-size: 0.9rem;
+        color: var(--cream);
+        line-height: 1.3;
+      }
+      .e-det-full {
+        grid-column: 1/-1;
+      }
+
+      /* VIS BAR */
+      .vis-wrap {
+        margin-bottom: 1.1rem;
+      }
+      .vis-lbl {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 0.6rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--warm-gray);
+        margin-bottom: 0.35rem;
+      }
+      .vis-track {
+        height: 3px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .vis-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 1s ease;
+      }
+      .solar-m .vis-fill {
+        background: linear-gradient(90deg, var(--solar-outer), var(--gilt));
+      }
+      .lunar-m .vis-fill {
+        background: linear-gradient(
+          90deg,
+          var(--lunar-shadow),
+          var(--lunar-silver)
+        );
+      }
+
+      /* PREVIEW BTN */
+      .prev-btn {
+        width: 100%;
+        background: transparent;
+        border: 1px solid var(--border-warm);
+        color: var(--gold);
+        padding: 0.65rem;
+        border-radius: 2px;
+        cursor: pointer;
+        font-family: "IM Fell English", serif;
+        font-style: italic;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+        margin-bottom: 0.75rem;
+      }
+      .prev-btn:hover {
+        background: rgba(200, 160, 80, 0.09);
+        border-color: var(--gilt);
+      }
+
+      /* SAFETY */
+      .safety {
+        background: rgba(139, 58, 26, 0.08);
+        border: 1px solid rgba(139, 58, 26, 0.28);
+        border-radius: 2px;
+        padding: 0.75rem 0.9rem;
+        font-family: "Crimson Text", serif;
+        font-size: 0.8rem;
+        color: #c0785a;
+        line-height: 1.6;
+      }
+      .safety strong {
+        color: #d05030;
+        display: block;
+        margin-bottom: 0.18rem;
+      }
+
+      /* ECLIPSE LIST */
+      .elist-section {
+        background: var(--glass);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .elist-hdr {
+        padding: 0.9rem 1.3rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .elist-toggles {
+        display: flex;
+        gap: 0.45rem;
+      }
+      .elt-btn {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--warm-gray);
+        padding: 0.28rem 0.75rem;
+        border-radius: 2px;
+        cursor: pointer;
+        font-family: "Cormorant Garamond", serif;
+        font-size: 0.65rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        transition: all 0.2s;
+      }
+      .elt-btn.active {
+        border-color: var(--gold);
+        color: var(--gold);
+      }
+      .eclipse-item {
+        padding: 0.9rem 1.3rem;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: background 0.18s;
+        display: flex;
+        gap: 0.9rem;
+        align-items: flex-start;
+      }
+      .eclipse-item:hover {
+        background: rgba(200, 160, 80, 0.05);
+      }
+      .eclipse-item.selected {
+        background: rgba(200, 160, 80, 0.08);
+        border-left: 2px solid var(--gold);
+        padding-left: calc(1.3rem - 2px);
+      }
+      .eclipse-item:last-child {
+        border-bottom: none;
+      }
+      .ei-icon {
+        font-size: 1.35rem;
+        flex-shrink: 0;
+        margin-top: 0.12rem;
+      }
+      .ei-body {
+        flex: 1;
+      }
+      .ei-date {
+        font-family: "Playfair Display", serif;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--cream);
+        margin-bottom: 0.12rem;
+      }
+      .ei-type {
+        font-family: "IM Fell English", serif;
+        font-style: italic;
+        font-size: 0.78rem;
+        color: var(--warm-gray);
+        margin-bottom: 0.15rem;
+      }
+      .ei-loc {
+        font-family: "Crimson Text", serif;
+        font-size: 0.78rem;
+        color: var(--bronze);
+      }
+      .ei-badge {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 0.58rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        padding: 0.18rem 0.45rem;
+        border-radius: 2px;
+        white-space: nowrap;
+        align-self: center;
+      }
+      .ei-badge.total {
+        background: rgba(200, 160, 80, 0.14);
+        color: var(--gilt);
+        border: 1px solid rgba(200, 160, 80, 0.28);
+      }
+      .ei-badge.annular {
+        background: rgba(200, 100, 30, 0.14);
+        color: #d4943a;
+        border: 1px solid rgba(200, 100, 30, 0.28);
+      }
+      .ei-badge.partial {
+        background: rgba(100, 100, 100, 0.12);
+        color: var(--warm-gray);
+        border: 1px solid var(--border);
+      }
+      .ei-badge.penumbral {
+        background: rgba(80, 80, 80, 0.1);
+        color: #807060;
+        border: 1px solid var(--border);
+      }
+
+      /* MOON PANEL */
+      .moon-panel {
+        background: var(--glass);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        padding: 1.2rem 1.3rem;
+      }
+      .phase-strip {
+        display: flex;
+        gap: 0.45rem;
+        margin-top: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .phase-glyph {
+        font-size: 1.2rem;
+        opacity: 0.32;
+        cursor: default;
+        transition: all 0.3s;
+      }
+      .phase-glyph.now {
+        opacity: 1;
+        filter: drop-shadow(0 0 5px rgba(200, 192, 176, 0.55));
+        transform: scale(1.28);
+      }
+      .phase-desc {
+        font-family: "IM Fell English", serif;
+        font-style: italic;
+        font-size: 0.8rem;
+        color: var(--warm-gray);
+        margin-top: 0.55rem;
+      }
+
+      /* SCROLLBAR */
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--ink);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--aged);
+        border-radius: 2px;
+      }
+      ::selection {
+        background: rgba(200, 160, 80, 0.22);
+      }
+
+      @media (max-width: 700px) {
+        .fact-grid,
+        .type-row {
+          grid-template-columns: 1fr 1fr;
+        }
+        .e-details {
+          grid-template-columns: 1fr;
+        }
+        .cdown {
+          grid-template-columns: repeat(4, 1fr);
+        }
+        .masthead-title {
+          font-size: 1.8rem;
+        }
+        .wrap {
+          padding: 0 0.9rem 3rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="starfield"></canvas>
+    <div class="vignette"></div>
+    <div class="wrap">
+      <div class="masthead">
+        <div class="live-time">
+          Universal Time<br /><span id="utcClock">——:——:——</span>
+        </div>
+        <div class="masthead-title">
+          Celestial Observer<em>Eclipse Atlas</em>
+        </div>
+        <div class="masthead-sub">
+          A scholarly compendium of solar &amp; lunar phenomena
+        </div>
+        <div class="masthead-ornament">✦ ✦ ✦</div>
+      </div>
+
+      <div class="location-row">
+        <span class="loc-label">Observing from</span>
+        <span class="loc-val" id="locVal">Seeking your position…</span>
+        <div class="search-wrap">
+          <input
+            type="text"
+            class="search-input"
+            id="searchInput"
+            placeholder="Search country or US state…"
+            autocomplete="off"
+          />
+          <div class="search-drop" id="searchDrop"></div>
+        </div>
+        <button class="geo-btn" onclick="requestGeo()">⊕ Locate Me</button>
+      </div>
+
+      <div class="preview-banner" id="previewBanner">
+        <span
+          >🔭 Previewing alignment for:
+          <strong id="previewDate">—</strong></span
+        >
+        <button onclick="resetToNow()">↩ Return to Now</button>
+      </div>
+
+      <div class="main-grid">
+        <!-- LEFT -->
+        <div>
+          <div class="panel">
+            <div class="panel-hdr">
+              <span class="panel-heading">Mechanical Orrery</span>
+              <span class="panel-sub" id="orreryLbl"
+                >Live — present moment</span
+              >
+            </div>
+            <canvas id="orrery"></canvas>
+            <div class="orrery-stats">
+              <div class="o-stat">
+                <span class="o-stat-val" id="sPhase">🌕</span
+                ><span class="o-stat-lbl">Moon Phase</span>
+              </div>
+              <div class="o-stat">
+                <span class="o-stat-val" id="sESDist">—</span
+                ><span class="o-stat-lbl">Earth–Sun</span>
+              </div>
+              <div class="o-stat">
+                <span class="o-stat-val" id="sEMDist">—</span
+                ><span class="o-stat-lbl">Earth–Moon</span>
+              </div>
+              <div class="o-stat">
+                <span class="o-stat-val" id="sAlign">—</span
+                ><span class="o-stat-lbl">Alignment</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-panel">
+            <div class="tab-bar">
+              <button class="tab-btn active" onclick="showTab('what', this)">
+                What is an Eclipse?
+              </button>
+              <button class="tab-btn" onclick="showTab('types', this)">
+                Types
+              </button>
+              <button class="tab-btn" onclick="showTab('science', this)">
+                Mechanics
+              </button>
+              <button class="tab-btn" onclick="showTab('saros', this)">
+                Saros Cycle
+              </button>
+              <button class="tab-btn" onclick="showTab('hist', this)">
+                History
+              </button>
+            </div>
+            <div class="tab-body">
+              <div class="tab-pane active" id="tab-what">
+                <h3>What is an Eclipse?</h3>
+                <p>
+                  An eclipse is the partial or total obscuration of one
+                  celestial body by another. In our solar system, the most
+                  spectacular eclipses arise from a remarkable cosmic
+                  coincidence — the Sun is almost precisely 400 times the
+                  diameter of the Moon, while also being approximately 400 times
+                  more distant. This causes both to subtend nearly equal angles
+                  in our sky, making total solar eclipses possible.
+                </p>
+                <p>
+                  Astronomers use the term <em>syzygy</em> (Greek: "yoked
+                  together") for the near-perfect alignment of three celestial
+                  bodies. When this occurs at a <em>lunar node</em> — the
+                  intersection of the Moon's orbital plane with the ecliptic —
+                  we witness an eclipse.
+                </p>
+                <div class="fact-grid">
+                  <div class="fact-card">
+                    <h4>Solar Eclipse</h4>
+                    <p>
+                      The Moon passes between Earth and Sun, casting its umbral
+                      shadow on Earth. Totality can last up to 7 minutes 31
+                      seconds at a single point.
+                    </p>
+                  </div>
+                  <div class="fact-card">
+                    <h4>Lunar Eclipse</h4>
+                    <p>
+                      Earth interposes itself between Sun and Moon, projecting
+                      its much larger shadow onto the lunar surface. Visible
+                      wherever the Moon is above the horizon.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="tab-pane" id="tab-types">
+                <h3>A Taxonomy of Eclipses</h3>
+                <p>
+                  <strong style="color: var(--gilt)">Solar Eclipses</strong> —
+                  classified by the geometry of the Moon's shadow falling upon
+                  Earth:
+                </p>
+                <div class="type-row">
+                  <div class="type-badge">
+                    <div class="icon">🌑</div>
+                    <h4>Total</h4>
+                    <p>
+                      Moon fully covers the Sun. The solar corona becomes
+                      visible. Rare at any given location.
+                    </p>
+                  </div>
+                  <div class="type-badge">
+                    <div class="icon">💍</div>
+                    <h4>Annular</h4>
+                    <p>
+                      Moon near apogee appears too small. A luminous "Ring of
+                      Fire" surrounds the dark disk.
+                    </p>
+                  </div>
+                  <div class="type-badge">
+                    <div class="icon">🌗</div>
+                    <h4>Partial</h4>
+                    <p>
+                      Only the penumbral shadow falls on the observer. A partial
+                      bite is taken from the Sun.
+                    </p>
+                  </div>
+                </div>
+                <p style="margin-top: 1.1rem">
+                  <strong style="color: var(--lunar-silver)"
+                    >Lunar Eclipses</strong
+                  >
+                  — classified by depth of the Moon's passage into Earth's
+                  shadow:
+                </p>
+                <div class="type-row">
+                  <div class="type-badge">
+                    <div class="icon">🔴</div>
+                    <h4>Total</h4>
+                    <p>
+                      Moon fully in Earth's umbra. Refracted sunlight turns it
+                      deep crimson — the "Blood Moon."
+                    </p>
+                  </div>
+                  <div class="type-badge">
+                    <div class="icon">🌓</div>
+                    <h4>Partial</h4>
+                    <p>
+                      Part of the Moon enters the umbra. A dark curved bite is
+                      plainly visible to the naked eye.
+                    </p>
+                  </div>
+                  <div class="type-badge">
+                    <div class="icon">🌕</div>
+                    <h4>Penumbral</h4>
+                    <p>
+                      Moon traverses only the penumbra. The darkening is subtle
+                      and often overlooked.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="tab-pane" id="tab-science">
+                <h3>Celestial Mechanics</h3>
+                <p>
+                  The Moon's orbital plane is inclined approximately
+                  <strong style="color: var(--gilt)">5.145°</strong> to the
+                  ecliptic. This tilt ensures most New and Full Moons pass above
+                  or below the alignment required for an eclipse. Eclipses occur
+                  only when the Moon is near a <em>lunar node</em>, which
+                  precess westward over an 18.6-year cycle.
+                </p>
+                <p>
+                  The Moon's elliptical orbit produces two critical distances:
+                  <em>perigee</em> (~356,500 km) when its disk is large enough
+                  to fully cover the Sun, producing totals; and
+                  <em>apogee</em> (~406,700 km) when it appears smaller and
+                  annular eclipses result.
+                </p>
+                <div class="fact-grid">
+                  <div class="fact-card">
+                    <h4>The Great Coincidence</h4>
+                    <p>
+                      Sun diameter: 1,392,700 km at 149.6M km. Moon diameter:
+                      3,474 km at 384,400 km. Both subtend ~0.5° — a coincidence
+                      unique in the known solar system.
+                    </p>
+                  </div>
+                  <div class="fact-card">
+                    <h4>Eclipse Seasons</h4>
+                    <p>
+                      Eclipses come in "seasons" every ~173 days when the Sun
+                      approaches a lunar node. Each season lasts ~38 days and
+                      may contain 1–3 eclipse events.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="tab-pane" id="tab-saros">
+                <h3>The Saros Cycle</h3>
+                <p>
+                  Discovered by ancient Babylonians, the Saros is a period of
+                  <strong style="color: var(--gilt)">6,585.3211 days</strong>
+                  (18 years, 11 days, 8 hours) after which the Sun, Earth, and
+                  Moon return to nearly identical relative positions, causing
+                  eclipses to repeat in predictable series.
+                </p>
+                <p>
+                  The Saros arises from the commensurability of three lunar
+                  periods: 223 synodic months, 239 anomalistic months, and 242
+                  draconic months — all nearly equal to 6,585.32 days. The extra
+                  8 hours shifts each eclipse
+                  <strong style="color: var(--gilt)">120° westward</strong> in
+                  longitude. After three Saros cycles (the <em>Exeligmos</em> —
+                  54 years, 34 days), eclipses reappear over nearly the same
+                  geography.
+                </p>
+                <div class="fact-grid">
+                  <div class="fact-card">
+                    <h4>Active Series</h4>
+                    <p>
+                      ~40 Saros series run simultaneously. Each spans
+                      1,200–1,500 years, containing 70–80 eclipses. The Sun
+                      gains or loses about 0.5° per Saros in declination.
+                    </p>
+                  </div>
+                  <div class="fact-card">
+                    <h4>Historical Power</h4>
+                    <p>
+                      Hipparchus (~130 BC) used the Saros to predict lunar
+                      eclipses centuries before Newtonian mechanics. Babylonian
+                      tablets recording Saros series date to 747 BC.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="tab-pane" id="tab-hist">
+                <h3>The Historical Record</h3>
+                <p>
+                  <strong style="color: var(--gilt)">585 BC</strong> — The
+                  eclipse of Thales. The philosopher predicted it using
+                  Babylonian records, halting the Battle of Halys mid-combat.
+                  One of the oldest precisely dated events in all of history.
+                </p>
+                <p>
+                  <strong style="color: var(--gilt)">1504</strong> — Columbus,
+                  stranded in Jamaica, foreknew a lunar eclipse from his
+                  almanac. He used the "Blood Moon" to frighten the Arawak into
+                  resuming his crew's food supply.
+                </p>
+                <p>
+                  <strong style="color: var(--gilt)">1868</strong> — Jules
+                  Janssen detected an unknown spectral line in the corona during
+                  totality. The element — helium — was not found on Earth until
+                  1895.
+                </p>
+                <p>
+                  <strong style="color: var(--gilt)">1919</strong> — Eddington
+                  photographed stars near the eclipsed Sun from Príncipe Island,
+                  confirming Einstein's General Theory of Relativity by
+                  measuring the bending of starlight around the Sun.
+                </p>
+                <p>
+                  <strong style="color: var(--gilt)">2024</strong> — The Great
+                  North American Eclipse of April 8th crossed 15 US states. An
+                  estimated 32 million people experienced totality — the
+                  most-watched eclipse in recorded history.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+          <!-- ECLIPSE COUNTDOWN -->
+          <div class="eclipse-section">
+            <div class="eclipse-toggle">
+              <button
+                class="etoggle solar active"
+                id="solarTog"
+                onclick="switchMode('solar')"
+              >
+                ☀ Solar
+              </button>
+              <button
+                class="etoggle lunar"
+                id="lunarTog"
+                onclick="switchMode('lunar')"
+              >
+                🌑 Lunar
+              </button>
+            </div>
+            <div class="eclipse-divider"></div>
+            <div class="eclipse-body solar-m" id="eBody">
+              <div class="e-next-lbl">Next Eclipse Event</div>
+              <div class="e-date" id="eDate">—</div>
+              <div class="e-type" id="eType">—</div>
+              <div class="cdown">
+                <div class="c-unit">
+                  <span class="c-num" id="cD">—</span
+                  ><span class="c-lbl">Days</span>
+                </div>
+                <div class="c-unit">
+                  <span class="c-num" id="cH">—</span
+                  ><span class="c-lbl">Hrs</span>
+                </div>
+                <div class="c-unit">
+                  <span class="c-num" id="cM">—</span
+                  ><span class="c-lbl">Min</span>
+                </div>
+                <div class="c-unit">
+                  <span class="c-num" id="cS">—</span
+                  ><span class="c-lbl">Sec</span>
+                </div>
+              </div>
+              <div class="e-details">
+                <div class="e-det">
+                  <div class="e-det-lbl">Duration</div>
+                  <div class="e-det-val" id="eDur">—</div>
+                </div>
+                <div class="e-det">
+                  <div class="e-det-lbl">Magnitude</div>
+                  <div class="e-det-val" id="eMag">—</div>
+                </div>
+                <div class="e-det">
+                  <div class="e-det-lbl">Saros Series</div>
+                  <div class="e-det-val" id="eSaros">—</div>
+                </div>
+                <div class="e-det">
+                  <div class="e-det-lbl">Coverage</div>
+                  <div class="e-det-val" id="eCov">—</div>
+                </div>
+                <div class="e-det e-det-full">
+                  <div class="e-det-lbl">Visibility</div>
+                  <div class="e-det-val" id="eVis">—</div>
+                </div>
+              </div>
+              <div class="vis-wrap">
+                <div class="vis-lbl">Likelihood from your region</div>
+                <div class="vis-track">
+                  <div class="vis-fill" id="visBar" style="width: 0%"></div>
+                </div>
+              </div>
+              <button class="prev-btn" onclick="previewEclipse()">
+                ✦ Preview celestial alignment on this date
+              </button>
+              <div class="safety" id="safetyNote">
+                <strong>⚠ Safety Warning</strong>
+                Never observe a solar eclipse without ISO 12312-2 certified
+                eclipse glasses. Ordinary sunglasses and camera lenses are
+                unsafe.
+              </div>
+            </div>
+          </div>
+
+          <!-- MOON PHASES -->
+          <div class="moon-panel">
+            <div class="panel-heading" style="font-size: 0.76rem">
+              Lunar Phase Cycle
+            </div>
+            <div class="phase-strip" id="phaseStrip"></div>
+            <div class="phase-desc" id="phaseDesc">—</div>
+          </div>
+
+          <!-- ECLIPSE LIST -->
+          <div class="elist-section">
+            <div class="elist-hdr">
+              <span class="panel-heading" style="font-size: 0.76rem"
+                >Upcoming Eclipses</span
+              >
+              <div class="elist-toggles">
+                <button
+                  class="elt-btn active"
+                  id="lstSolBtn"
+                  onclick="switchList('solar')"
+                >
+                  Solar
+                </button>
+                <button
+                  class="elt-btn"
+                  id="lstLunBtn"
+                  onclick="switchList('lunar')"
+                >
+                  Lunar
+                </button>
+              </div>
+            </div>
+            <div id="eclipseList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ═══════════════════════════════════════════════════
+      //  DATA
+      // ═══════════════════════════════════════════════════
+      const SOLAR = [
+        {
+          date: "2026-02-17",
+          label: "17 Feb 2026",
+          type: "Total",
+          dur: "2m 20s",
+          mag: 1.045,
+          saros: 130,
+          cov: "100%",
+          vis: "Patagonia, W.Africa, Atlantic",
+          icon: "🌑",
+        },
+        {
+          date: "2026-08-12",
+          label: "12 Aug 2026",
+          type: "Total",
+          dur: "2m 18s",
+          mag: 1.037,
+          saros: 135,
+          cov: "100%",
+          vis: "Spain, Russia, Iceland, Greenland",
+          icon: "🌑",
+        },
+        {
+          date: "2027-02-06",
+          label: "6 Feb 2027",
+          type: "Annular",
+          dur: "7m 51s",
+          mag: 0.928,
+          saros: 140,
+          cov: "86%",
+          vis: "Chile, Argentina, Pacific",
+          icon: "💍",
+        },
+        {
+          date: "2027-08-02",
+          label: "2 Aug 2027",
+          type: "Total",
+          dur: "6m 23s",
+          mag: 1.079,
+          saros: 136,
+          cov: "100%",
+          vis: "Morocco, Egypt, Saudi Arabia, India",
+          icon: "🌑",
+        },
+        {
+          date: "2028-01-26",
+          label: "26 Jan 2028",
+          type: "Annular",
+          dur: "10m 27s",
+          mag: 0.921,
+          saros: 141,
+          cov: "85%",
+          vis: "South America, South Atlantic",
+          icon: "💍",
+        },
+        {
+          date: "2028-07-22",
+          label: "22 Jul 2028",
+          type: "Total",
+          dur: "5m 10s",
+          mag: 1.056,
+          saros: 136,
+          cov: "100%",
+          vis: "Australia, New Zealand",
+          icon: "🌑",
+        },
+        {
+          date: "2030-06-01",
+          label: "1 Jun 2030",
+          type: "Annular",
+          dur: "5m 21s",
+          mag: 0.944,
+          saros: 137,
+          cov: "89%",
+          vis: "Algeria, Greece, Turkey, Russia",
+          icon: "💍",
+        },
+        {
+          date: "2030-11-25",
+          label: "25 Nov 2030",
+          type: "Total",
+          dur: "3m 44s",
+          mag: 1.047,
+          saros: 142,
+          cov: "100%",
+          vis: "Namibia, Botswana, South Africa",
+          icon: "🌑",
+        },
+      ];
+      const LUNAR = [
+        {
+          date: "2026-03-03",
+          label: "3 Mar 2026",
+          type: "Total",
+          dur: "1h 17m",
+          mag: 1.18,
+          saros: 123,
+          cov: "100%",
+          vis: "Africa, Europe, Americas, Asia",
+          color: "Deep Crimson",
+          icon: "🔴",
+        },
+        {
+          date: "2026-08-28",
+          label: "28 Aug 2026",
+          type: "Partial",
+          dur: "3h 18m",
+          mag: 0.93,
+          saros: 119,
+          cov: "93%",
+          vis: "Pacific, Americas, Europe, Africa",
+          color: "Orange",
+          icon: "🌓",
+        },
+        {
+          date: "2028-07-06",
+          label: "6 Jul 2028",
+          type: "Total",
+          dur: "1h 42m",
+          mag: 1.61,
+          saros: 130,
+          cov: "100%",
+          vis: "Americas, Europe, Africa, Middle East",
+          color: "Blood Red",
+          icon: "🔴",
+        },
+        {
+          date: "2029-01-01",
+          label: "1 Jan 2029",
+          type: "Total",
+          dur: "1h 38m",
+          mag: 1.4,
+          saros: 135,
+          cov: "100%",
+          vis: "Asia, Europe, Africa, Americas",
+          color: "Copper Red",
+          icon: "🔴",
+        },
+        {
+          date: "2029-06-26",
+          label: "26 Jun 2029",
+          type: "Total",
+          dur: "1h 21m",
+          mag: 1.84,
+          saros: 140,
+          cov: "100%",
+          vis: "Americas, Europe, Africa",
+          color: "Deep Red",
+          icon: "🔴",
+        },
+        {
+          date: "2029-12-21",
+          label: "21 Dec 2029",
+          type: "Partial",
+          dur: "4h 02m",
+          mag: 0.76,
+          saros: 145,
+          cov: "76%",
+          vis: "Asia, Australia, Americas",
+          color: "Amber",
+          icon: "🌓",
+        },
+        {
+          date: "2030-06-16",
+          label: "16 Jun 2030",
+          type: "Penumbral",
+          dur: "5h 04m",
+          mag: 0.48,
+          saros: 112,
+          cov: "Penumbral",
+          vis: "Africa, Europe, Asia",
+          color: "Subtle",
+          icon: "🌕",
+        },
+        {
+          date: "2030-12-11",
+          label: "11 Dec 2030",
+          type: "Total",
+          dur: "1h 13m",
+          mag: 1.12,
+          saros: 128,
+          cov: "100%",
+          vis: "Americas, Asia, Pacific",
+          color: "Blood Red",
+          icon: "🔴",
+        },
+      ];
+      const LOC = [
+        { n: "Afghanistan", lat: 33.9, lon: 67.7, r: "Asia" },
+        { n: "Albania", lat: 41.2, lon: 20.2, r: "Europe" },
+        { n: "Algeria", lat: 28, lon: 1.7, r: "Africa" },
+        { n: "Argentina", lat: -34.6, lon: -58.4, r: "S. America" },
+        { n: "Australia", lat: -25.3, lon: 133.8, r: "Oceania" },
+        { n: "Austria", lat: 47.8, lon: 13, r: "Europe" },
+        { n: "Bangladesh", lat: 23.7, lon: 90.4, r: "Asia" },
+        { n: "Belgium", lat: 50.9, lon: 4.5, r: "Europe" },
+        { n: "Bolivia", lat: -16.5, lon: -68.1, r: "S. America" },
+        { n: "Brazil", lat: -15.8, lon: -47.9, r: "S. America" },
+        { n: "Cambodia", lat: 11.6, lon: 104.9, r: "Asia" },
+        { n: "Canada", lat: 45.4, lon: -75.7, r: "N. America" },
+        { n: "Chile", lat: -33.5, lon: -70.7, r: "S. America" },
+        { n: "China", lat: 39.9, lon: 116.4, r: "Asia" },
+        { n: "Colombia", lat: 4.7, lon: -74.1, r: "S. America" },
+        { n: "Croatia", lat: 45.8, lon: 15.9, r: "Europe" },
+        { n: "Czech Republic", lat: 50.1, lon: 14.4, r: "Europe" },
+        { n: "Denmark", lat: 55.7, lon: 12.6, r: "Europe" },
+        { n: "Ecuador", lat: -0.2, lon: -78.5, r: "S. America" },
+        { n: "Egypt", lat: 30.1, lon: 31.2, r: "Africa" },
+        { n: "Ethiopia", lat: 9, lon: 38.7, r: "Africa" },
+        { n: "Finland", lat: 60.2, lon: 25, r: "Europe" },
+        { n: "France", lat: 48.9, lon: 2.4, r: "Europe" },
+        { n: "Germany", lat: 52.5, lon: 13.4, r: "Europe" },
+        { n: "Ghana", lat: 5.6, lon: -0.2, r: "Africa" },
+        { n: "Greece", lat: 37.9, lon: 23.7, r: "Europe" },
+        { n: "Hungary", lat: 47.5, lon: 19.1, r: "Europe" },
+        { n: "India", lat: 20.6, lon: 78.9, r: "Asia" },
+        { n: "Indonesia", lat: -6.2, lon: 106.8, r: "Asia" },
+        { n: "Iran", lat: 35.7, lon: 51.4, r: "Asia" },
+        { n: "Iraq", lat: 33.3, lon: 44.4, r: "Asia" },
+        { n: "Ireland", lat: 53.4, lon: -8.2, r: "Europe" },
+        { n: "Israel", lat: 31.8, lon: 35.2, r: "Asia" },
+        { n: "Italy", lat: 41.9, lon: 12.5, r: "Europe" },
+        { n: "Japan", lat: 35.7, lon: 139.7, r: "Asia" },
+        { n: "Jordan", lat: 31.9, lon: 35.9, r: "Asia" },
+        { n: "Kenya", lat: -1.3, lon: 36.8, r: "Africa" },
+        { n: "Malaysia", lat: 3.1, lon: 101.7, r: "Asia" },
+        { n: "Mexico", lat: 19.4, lon: -99.1, r: "N. America" },
+        { n: "Morocco", lat: 34, lon: -5, r: "Africa" },
+        { n: "Myanmar", lat: 19.8, lon: 96.2, r: "Asia" },
+        { n: "Nepal", lat: 27.7, lon: 85.3, r: "Asia" },
+        { n: "Netherlands", lat: 52.4, lon: 4.9, r: "Europe" },
+        { n: "New Zealand", lat: -36.9, lon: 174.8, r: "Oceania" },
+        { n: "Nigeria", lat: 9.1, lon: 7.4, r: "Africa" },
+        { n: "Norway", lat: 59.9, lon: 10.7, r: "Europe" },
+        { n: "Pakistan", lat: 33.7, lon: 73.1, r: "Asia" },
+        { n: "Peru", lat: -12, lon: -77, r: "S. America" },
+        { n: "Philippines", lat: 14.6, lon: 121, r: "Asia" },
+        { n: "Poland", lat: 52.2, lon: 21, r: "Europe" },
+        { n: "Portugal", lat: 38.7, lon: -9.1, r: "Europe" },
+        { n: "Romania", lat: 44.4, lon: 26.1, r: "Europe" },
+        { n: "Russia", lat: 55.8, lon: 37.6, r: "Europe" },
+        { n: "Saudi Arabia", lat: 24.7, lon: 46.7, r: "Asia" },
+        { n: "Serbia", lat: 44.8, lon: 20.5, r: "Europe" },
+        { n: "Singapore", lat: 1.4, lon: 103.8, r: "Asia" },
+        { n: "South Africa", lat: -25.7, lon: 28.2, r: "Africa" },
+        { n: "South Korea", lat: 37.6, lon: 127, r: "Asia" },
+        { n: "Spain", lat: 40.4, lon: -3.7, r: "Europe" },
+        { n: "Sri Lanka", lat: 6.9, lon: 79.9, r: "Asia" },
+        { n: "Sweden", lat: 59.3, lon: 18.1, r: "Europe" },
+        { n: "Switzerland", lat: 47.4, lon: 8.5, r: "Europe" },
+        { n: "Taiwan", lat: 25, lon: 121.5, r: "Asia" },
+        { n: "Thailand", lat: 13.8, lon: 100.5, r: "Asia" },
+        { n: "Turkey", lat: 39.9, lon: 32.9, r: "Asia" },
+        { n: "Ukraine", lat: 50.5, lon: 30.5, r: "Europe" },
+        { n: "United Kingdom", lat: 51.5, lon: -0.1, r: "Europe" },
+        { n: "Venezuela", lat: 10.5, lon: -66.9, r: "S. America" },
+        { n: "Vietnam", lat: 21, lon: 105.8, r: "Asia" },
+        { n: "Zimbabwe", lat: -17.8, lon: 31, r: "Africa" },
+        { n: "Alabama, USA", lat: 32.4, lon: -86.9, r: "USA" },
+        { n: "Alaska, USA", lat: 64.2, lon: -153.4, r: "USA" },
+        { n: "Arizona, USA", lat: 33.4, lon: -112.1, r: "USA" },
+        { n: "Arkansas, USA", lat: 34.7, lon: -92.4, r: "USA" },
+        { n: "California, USA", lat: 36.8, lon: -119.4, r: "USA" },
+        { n: "Colorado, USA", lat: 39.5, lon: -104.9, r: "USA" },
+        { n: "Florida, USA", lat: 27.7, lon: -82.5, r: "USA" },
+        { n: "Georgia, USA", lat: 32.2, lon: -83.4, r: "USA" },
+        { n: "Hawaii, USA", lat: 21.3, lon: -157.8, r: "USA" },
+        { n: "Illinois, USA", lat: 40, lon: -89.2, r: "USA" },
+        { n: "Indiana, USA", lat: 40.3, lon: -86.1, r: "USA" },
+        { n: "Iowa, USA", lat: 42, lon: -93.2, r: "USA" },
+        { n: "Kansas, USA", lat: 38.5, lon: -98.4, r: "USA" },
+        { n: "Kentucky, USA", lat: 37.7, lon: -84.8, r: "USA" },
+        { n: "Louisiana, USA", lat: 31.2, lon: -91.8, r: "USA" },
+        { n: "Massachusetts, USA", lat: 42.4, lon: -71.4, r: "USA" },
+        { n: "Michigan, USA", lat: 44.2, lon: -85.6, r: "USA" },
+        { n: "Minnesota, USA", lat: 46.4, lon: -93.1, r: "USA" },
+        { n: "Mississippi, USA", lat: 32.7, lon: -89.7, r: "USA" },
+        { n: "Missouri, USA", lat: 38.5, lon: -92.5, r: "USA" },
+        { n: "Montana, USA", lat: 47, lon: -110.4, r: "USA" },
+        { n: "Nebraska, USA", lat: 41.5, lon: -99.9, r: "USA" },
+        { n: "Nevada, USA", lat: 38.5, lon: -117.2, r: "USA" },
+        { n: "New Jersey, USA", lat: 40.1, lon: -74.5, r: "USA" },
+        { n: "New Mexico, USA", lat: 34.3, lon: -106, r: "USA" },
+        { n: "New York, USA", lat: 42.2, lon: -74.9, r: "USA" },
+        { n: "North Carolina, USA", lat: 35.6, lon: -79.8, r: "USA" },
+        { n: "Ohio, USA", lat: 40.4, lon: -82.8, r: "USA" },
+        { n: "Oklahoma, USA", lat: 35.6, lon: -96.9, r: "USA" },
+        { n: "Oregon, USA", lat: 44.6, lon: -122.1, r: "USA" },
+        { n: "Pennsylvania, USA", lat: 40.6, lon: -77.6, r: "USA" },
+        { n: "Tennessee, USA", lat: 35.9, lon: -86.7, r: "USA" },
+        { n: "Texas, USA", lat: 31.2, lon: -99.3, r: "USA" },
+        { n: "Utah, USA", lat: 39.3, lon: -111.1, r: "USA" },
+        { n: "Virginia, USA", lat: 37.8, lon: -79.5, r: "USA" },
+        { n: "Washington, USA", lat: 47.4, lon: -121.5, r: "USA" },
+        { n: "Wisconsin, USA", lat: 44.5, lon: -89.6, r: "USA" },
+      ];
+
+      // ═══════════════════════════════════════════════════
+      //  STATE
+      // ═══════════════════════════════════════════════════
+      let uLat = null,
+        uLon = null,
+        uName = "Unknown";
+      let curMode = "solar",
+        listMode = "solar";
+      let previewDt = null,
+        selIdx = -1,
+        cTarget = null;
+
+      // ═══════════════════════════════════════════════════
+      //  STARFIELD
+      // ═══════════════════════════════════════════════════
+      (function () {
+        const c = document.getElementById("starfield"),
+          x = c.getContext("2d");
+        let s = [];
+        function resize() {
+          c.width = innerWidth;
+          c.height = innerHeight;
+          mkS();
+        }
+        function mkS() {
+          s = Array.from({ length: 260 }, () => ({
+            x: Math.random() * c.width,
+            y: Math.random() * c.height,
+            r: Math.random() * 1.3 + 0.2,
+            a: Math.random(),
+            sp: Math.random() * 0.004 + 0.001,
+            ph: Math.random() * Math.PI * 2,
+          }));
+        }
+        function draw(t) {
+          x.clearRect(0, 0, c.width, c.height);
+          s.forEach((st) => {
+            const a = st.a * (0.4 + 0.6 * Math.sin(t * st.sp + st.ph));
+            x.beginPath();
+            x.arc(st.x, st.y, st.r, 0, Math.PI * 2);
+            x.fillStyle = `rgba(235,222,195,${a})`;
+            x.fill();
+          });
+          requestAnimationFrame(draw);
+        }
+        resize();
+        addEventListener("resize", resize);
+        requestAnimationFrame(draw);
+      })();
+
+      // ═══════════════════════════════════════════════════
+      //  CLOCK
+      // ═══════════════════════════════════════════════════
+      function tick() {
+        const n = new Date();
+        document.getElementById("utcClock").textContent =
+          String(n.getUTCHours()).padStart(2, "0") +
+          ":" +
+          String(n.getUTCMinutes()).padStart(2, "0") +
+          ":" +
+          String(n.getUTCSeconds()).padStart(2, "0");
+      }
+      setInterval(tick, 1000);
+      tick();
+
+      // ═══════════════════════════════════════════════════
+      //  ASTRONOMY
+      // ═══════════════════════════════════════════════════
+      function jd(d) {
+        return d.getTime() / 86400000 + 2440587.5;
+      }
+      function moonPhase(d) {
+        const c = (jd(d) - 2451549.5) / 29.53058867;
+        return c - Math.floor(c);
+      }
+      function phaseName(p) {
+        if (p < 0.063) return { n: "New Moon", e: "🌑" };
+        if (p < 0.188) return { n: "Waxing Crescent", e: "🌒" };
+        if (p < 0.313) return { n: "First Quarter", e: "🌓" };
+        if (p < 0.438) return { n: "Waxing Gibbous", e: "🌔" };
+        if (p < 0.563) return { n: "Full Moon", e: "🌕" };
+        if (p < 0.688) return { n: "Waning Gibbous", e: "🌖" };
+        if (p < 0.813) return { n: "Last Quarter", e: "🌗" };
+        if (p < 0.938) return { n: "Waning Crescent", e: "🌘" };
+        return { n: "New Moon", e: "🌑" };
+      }
+      function esDist(d) {
+        const doy = (d - new Date(d.getFullYear(), 0, 0)) / 86400000;
+        return 1 - 0.0167 * Math.cos((2 * Math.PI * (doy - 3)) / 365.25);
+      }
+      function emDist(d) {
+        const p = moonPhase(d);
+        return Math.round(384400 - 21000 * Math.cos(p * 2 * Math.PI + 0.5));
+      }
+      function earthAngle(d) {
+        return (
+          ((d - new Date(d.getFullYear(), 0, 0)) / 86400000 / 365.25) *
+            Math.PI *
+            2 -
+          Math.PI / 2
+        );
+      }
+      function moonAngle(d) {
+        return moonPhase(d) * Math.PI * 2 - Math.PI / 2;
+      }
+      function alignStr(p) {
+        if (p < 0.06 || p > 0.94) return "Solar Eclipse Zone";
+        if (Math.abs(p - 0.5) < 0.06) return "Lunar Eclipse Zone";
+        if (Math.abs(p - 0.25) < 0.08) return "First Quarter";
+        if (Math.abs(p - 0.75) < 0.08) return "Last Quarter";
+        return "No Eclipse";
+      }
+
+      // ═══════════════════════════════════════════════════
+      //  3D ORRERY
+      // ═══════════════════════════════════════════════════
+      const oc = document.getElementById("orrery"),
+        ctx = oc.getContext("2d");
+      function resizeOrrery() {
+        const p = oc.parentElement;
+        oc.width = p.offsetWidth;
+        oc.height = 440;
+      }
+      addEventListener("resize", () => {
+        resizeOrrery();
+      });
+      resizeOrrery();
+
+      function sphere3D(cx, cy, r, c1, c2, c3, la) {
+        // glow
+        const gl = ctx.createRadialGradient(cx, cy, r * 0.5, cx, cy, r * 2.5);
+        gl.addColorStop(0, c1.replace("rgb", "rgba").replace(")", ",0.1)"));
+        gl.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = gl;
+        ctx.fill();
+        // body
+        const lx = Math.cos(la || -0.6) * 0.45,
+          ly = Math.sin(la || -0.6) * 0.45;
+        const g = ctx.createRadialGradient(
+          cx - r * lx * 0.6,
+          cy - r * ly * 0.6,
+          0,
+          cx,
+          cy,
+          r,
+        );
+        g.addColorStop(0, c1);
+        g.addColorStop(0.5, c2);
+        g.addColorStop(1, c3);
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = g;
+        ctx.fill();
+        // specular
+        const hx = cx + r * (lx * 0.4 + 0.12),
+          hy = cy + r * (ly * 0.4 - 0.28);
+        const sp = ctx.createRadialGradient(hx, hy, 0, hx, hy, r * 0.4);
+        sp.addColorStop(0, "rgba(255,255,255,.5)");
+        sp.addColorStop(0.6, "rgba(255,255,255,.06)");
+        sp.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = sp;
+        ctx.fill();
+        // rim
+        const rm = ctx.createRadialGradient(cx, cy, r * 0.75, cx, cy, r);
+        rm.addColorStop(0, "rgba(0,0,0,0)");
+        rm.addColorStop(1, c3.replace("0.4", "0.55"));
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = rm;
+        ctx.fill();
+      }
+
+      function drawSun(cx, cy, r, t) {
+        // corona
+        for (let i = 5; i >= 1; i--) {
+          const cr = r * (1 + i * 0.2);
+          const cg = ctx.createRadialGradient(cx, cy, r * 0.85, cx, cy, cr);
+          cg.addColorStop(0, `rgba(240,190,60,${0.08 / i})`);
+          cg.addColorStop(1, "rgba(160,80,10,0)");
+          ctx.beginPath();
+          ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+          ctx.fillStyle = cg;
+          ctx.fill();
+        }
+        // rays
+        for (let i = 0; i < 18; i++) {
+          const a = (i / 18) * Math.PI * 2 + t * 0.22;
+          const l = r * (1.14 + 0.14 * Math.sin(t * 1.6 + i * 0.8));
+          ctx.beginPath();
+          ctx.moveTo(cx + r * 1.05 * Math.cos(a), cy + r * 1.05 * Math.sin(a));
+          ctx.lineTo(cx + l * Math.cos(a), cy + l * Math.sin(a));
+          ctx.strokeStyle = "rgba(240,195,60,.15)";
+          ctx.lineWidth = r * 0.055;
+          ctx.stroke();
+        }
+        // body
+        const sg = ctx.createRadialGradient(
+          cx - r * 0.28,
+          cy - r * 0.32,
+          0,
+          cx,
+          cy,
+          r,
+        );
+        sg.addColorStop(0, "#fffae0");
+        sg.addColorStop(0.2, "#f8e060");
+        sg.addColorStop(0.6, "#e8980a");
+        sg.addColorStop(1, "#a04808");
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = sg;
+        ctx.fill();
+        // granulation
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.clip();
+        for (let i = 0; i < 10; i++) {
+          ctx.beginPath();
+          ctx.arc(
+            cx + r * (Math.sin(i * 137.5) * 1.4),
+            cy + r * (Math.cos(i * 97.3) * 1.4),
+            r * 0.055,
+            0,
+            Math.PI * 2,
+          );
+          ctx.fillStyle = "rgba(255,225,80,.1)";
+          ctx.fill();
+        }
+        ctx.restore();
+        // limb darkening
+        const ld = ctx.createRadialGradient(cx, cy, r * 0.45, cx, cy, r);
+        ld.addColorStop(0, "rgba(0,0,0,0)");
+        ld.addColorStop(1, "rgba(50,15,0,.42)");
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = ld;
+        ctx.fill();
+      }
+
+      function drawEarth(cx, cy, r, t, eAng) {
+        sphere3D(cx, cy, r, "#4a9ed0", "#1b5a8c", "rgba(20,60,100,0.4)", -0.5);
+        // continents
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.clip();
+        const sh = (eAng * 0.25 + t * 0.015) % (Math.PI * 2);
+        const ctns = [
+          [-0.14, -0.24, 0.38, 0.28, 0.42],
+          [0.28, 0.06, 0.22, 0.33, -0.3],
+          [-0.32, 0.14, 0.18, 0.2, 0.1],
+          [0.05, -0.5, 0.32, 0.17, 0],
+          [0.42, -0.32, 0.24, 0.2, 0.18],
+        ];
+        ctns.forEach(([ox, oy, rx, ry, rot]) => {
+          ctx.beginPath();
+          ctx.ellipse(
+            cx + r * (ox + 0.15 * Math.sin(sh)),
+            cy + r * oy,
+            r * rx,
+            r * ry,
+            rot,
+            0,
+            Math.PI * 2,
+          );
+          ctx.fillStyle = "rgba(46,82,38,.72)";
+          ctx.fill();
+        });
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - r * 0.87, r * 0.28, r * 0.11, 0, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(235,248,255,.58)";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + r * 0.87, r * 0.26, r * 0.1, 0, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(225,240,255,.5)";
+        ctx.fill();
+        ctx.restore();
+        // atmosphere
+        const atm = ctx.createRadialGradient(
+          cx,
+          cy,
+          r * 0.88,
+          cx,
+          cy,
+          r * 1.12,
+        );
+        atm.addColorStop(0, "rgba(70,130,210,0)");
+        atm.addColorStop(0.6, "rgba(70,130,210,.12)");
+        atm.addColorStop(1, "rgba(70,130,210,0)");
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 1.12, 0, Math.PI * 2);
+        ctx.fillStyle = atm;
+        ctx.fill();
+      }
+
+      function drawMoon(cx, cy, r, phase) {
+        sphere3D(cx, cy, r, "#c8bfb0", "#807060", "rgba(50,40,32,0.4)", -0.5);
+        // craters
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.clip();
+        [
+          [0.22, -0.28, 0.1],
+          [-0.26, 0.16, 0.08],
+          [0.1, 0.42, 0.12],
+          [-0.1, -0.52, 0.07],
+          [0.42, 0.12, 0.06],
+          [-0.38, -0.18, 0.05],
+        ].forEach(([ox, oy, cr]) => {
+          ctx.beginPath();
+          ctx.arc(cx + r * ox, cy + r * oy, r * cr, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(38,32,25,.38)";
+          ctx.fill();
+          ctx.strokeStyle = "rgba(175,165,150,.18)";
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+        });
+        ctx.restore();
+        // phase shadow
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.beginPath();
+        if (phase < 0.5) {
+          ctx.arc(cx, cy, r, -Math.PI / 2, Math.PI / 2);
+          ctx.ellipse(
+            cx,
+            cy,
+            r * Math.abs(Math.cos(phase * Math.PI * 2)),
+            r,
+            0,
+            Math.PI / 2,
+            -Math.PI / 2,
+            true,
+          );
+        } else {
+          ctx.arc(cx, cy, r, Math.PI / 2, -Math.PI / 2);
+          ctx.ellipse(
+            cx,
+            cy,
+            r * Math.abs(Math.cos((phase - 0.5) * Math.PI * 2)),
+            r,
+            0,
+            -Math.PI / 2,
+            Math.PI / 2,
+            true,
+          );
+        }
+        ctx.fillStyle = "rgba(6,4,2,.84)";
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function lbl(cx, cy, r, txt, col) {
+        ctx.save();
+        ctx.font = `600 ${Math.max(10, r * 0.52)}px 'Cormorant Garamond',serif`;
+        ctx.fillStyle = col;
+        ctx.textAlign = "center";
+        ctx.shadowColor = "rgba(0,0,0,.9)";
+        ctx.shadowBlur = 5;
+        ctx.fillText(txt, cx, cy + r + Math.max(13, r * 0.65));
+        ctx.restore();
+      }
+
+      function drawOrrery(ts) {
+        const W = oc.width,
+          H = oc.height,
+          cx = W / 2,
+          cy = H / 2,
+          t = ts * 0.001;
+        const dt = previewDt || new Date();
+        ctx.clearRect(0, 0, W, H);
+        // bg
+        const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H));
+        bg.addColorStop(0, "rgba(20,14,8,.97)");
+        bg.addColorStop(1, "rgba(6,4,2,.99)");
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, W, H);
+        const sc = Math.min(W, H),
+          sunR = Math.min(sc * 0.085, 50),
+          eR = Math.min(sc * 0.032, 22),
+          mR = Math.min(sc * 0.018, 13);
+        const eOrb = sc * 0.34,
+          mOrb = sc * 0.096;
+        const eAng = earthAngle(dt),
+          mAng = moonAngle(dt),
+          mp = moonPhase(dt);
+        const ex = cx + eOrb * Math.cos(eAng),
+          ey = cy + eOrb * Math.sin(eAng);
+        const mx = ex + mOrb * Math.cos(mAng),
+          my = ey + mOrb * Math.sin(mAng);
+        // orbit paths
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, eOrb * 1.015, eOrb * 0.985, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(200,160,80,.07)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 10]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(ex, ey, mOrb, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(180,170,150,.09)";
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+        // eclipse shadows
+        const isSol = mp < 0.06 || mp > 0.94,
+          isLun = Math.abs(mp - 0.5) < 0.06;
+        if (isSol) {
+          ctx.save();
+          const ang = mAng + Math.PI,
+            cL = mOrb * 2.6,
+            cW = mOrb * 0.22;
+          ctx.beginPath();
+          ctx.moveTo(
+            mx + cW * Math.cos(ang + Math.PI / 2),
+            my + cW * Math.sin(ang + Math.PI / 2),
+          );
+          ctx.lineTo(mx + cL * Math.cos(ang), my + cL * Math.sin(ang));
+          ctx.lineTo(
+            mx + cW * Math.cos(ang - Math.PI / 2),
+            my + cW * Math.sin(ang - Math.PI / 2),
+          );
+          ctx.closePath();
+          ctx.fillStyle = "rgba(240,180,50,.16)";
+          ctx.fill();
+          ctx.restore();
+        }
+        if (isLun) {
+          ctx.save();
+          const ang = eAng + Math.PI,
+            cL = mOrb * 2.3,
+            cW = mOrb * 0.38;
+          ctx.beginPath();
+          ctx.moveTo(
+            ex + cW * Math.cos(ang + Math.PI / 2),
+            ey + cW * Math.sin(ang + Math.PI / 2),
+          );
+          ctx.lineTo(ex + cL * Math.cos(ang), ey + cL * Math.sin(ang));
+          ctx.lineTo(
+            ex + cW * Math.cos(ang - Math.PI / 2),
+            ey + cW * Math.sin(ang - Math.PI / 2),
+          );
+          ctx.closePath();
+          ctx.fillStyle = "rgba(120,90,200,.2)";
+          ctx.fill();
+          ctx.restore();
+        }
+        // syzygy line
+        if (isSol || isLun) {
+          ctx.save();
+          ctx.setLineDash([2, 7]);
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(mx, my);
+          ctx.strokeStyle = isSol
+            ? "rgba(240,190,60,.28)"
+            : "rgba(140,120,210,.28)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+        }
+        // draw bodies
+        drawSun(cx, cy, sunR, t);
+        lbl(cx, cy, sunR, "Sol", "rgba(240,195,75,.68)");
+        drawEarth(ex, ey, eR, t, eAng);
+        lbl(ex, ey, eR, "Terra", "rgba(80,155,215,.72)");
+        drawMoon(mx, my, mR, mp);
+        lbl(mx, my, mR, "Luna", "rgba(185,175,160,.68)");
+        // observer
+        if (uLat !== null) {
+          const oa = (uLon / 180) * Math.PI + eAng;
+          const ox = ex + eR * 0.9 * Math.cos(oa),
+            oy = ey + eR * 0.9 * Math.sin(oa);
+          ctx.beginPath();
+          ctx.arc(ox, oy, 2.4, 0, Math.PI * 2);
+          ctx.fillStyle = "#c8982a";
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(ox, oy, 4 + 1.2 * Math.sin(t * 3), 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(200,152,42,.5)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+        // preview label
+        if (previewDt) {
+          ctx.save();
+          ctx.font = `italic 580 ${Math.max(10, sc * 0.018)}px 'Cormorant Garamond',serif`;
+          ctx.fillStyle = "rgba(200,155,65,.55)";
+          ctx.textAlign = "left";
+          ctx.shadowColor = "rgba(0,0,0,.8)";
+          ctx.shadowBlur = 4;
+          ctx.fillText("Preview: " + previewDt.toDateString(), 14, 36);
+          ctx.restore();
+        }
+        // live stats
+        if (!previewDt) {
+          const pi = phaseName(mp),
+            es = (esDist(dt) * 149.6).toFixed(1) + "M km",
+            em = emDist(dt).toLocaleString() + " km";
+          document.getElementById("sPhase").textContent =
+            pi.e + " " + pi.n.split(" ").slice(-1)[0];
+          document.getElementById("sESDist").textContent = es;
+          document.getElementById("sEMDist").textContent = em;
+          document.getElementById("sAlign").textContent = alignStr(mp);
+        }
+        requestAnimationFrame(drawOrrery);
+      }
+      requestAnimationFrame(drawOrrery);
+
+      //  COUNTDOWN
+      function updateCdown() {
+        if (!cTarget) return;
+        const diff = cTarget - new Date();
+        if (diff <= 0) {
+          ["cD", "cH", "cM", "cS"].forEach(
+            (id) => (document.getElementById(id).textContent = "0"),
+          );
+          return;
+        }
+        document.getElementById("cD").textContent = Math.floor(diff / 86400000);
+        document.getElementById("cH").textContent = String(
+          Math.floor((diff % 86400000) / 3600000),
+        ).padStart(2, "0");
+        document.getElementById("cM").textContent = String(
+          Math.floor((diff % 3600000) / 60000),
+        ).padStart(2, "0");
+        document.getElementById("cS").textContent = String(
+          Math.floor((diff % 60000) / 1000),
+        ).padStart(2, "0");
+      }
+      setInterval(updateCdown, 1000);
+
+      //  ECLIPSE CARD
+      function nextEclipse(type) {
+        const l = type === "solar" ? SOLAR : LUNAR,
+          n = new Date();
+        return l.find((e) => new Date(e.date) > n) || l[l.length - 1];
+      }
+      function updateCard(e, type) {
+        cTarget = new Date(e.date);
+        document.getElementById("eDate").textContent = e.label;
+        document.getElementById("eType").textContent =
+          e.type +
+          (type === "lunar" && e.color ? " — " + e.color : "") +
+          " " +
+          (type === "solar" ? "Solar" : "Lunar") +
+          " Eclipse · Saros " +
+          e.saros;
+        document.getElementById("eDur").textContent = e.dur;
+        document.getElementById("eMag").textContent = e.mag.toFixed(3);
+        document.getElementById("eSaros").textContent = e.saros;
+        document.getElementById("eCov").textContent = e.cov;
+        document.getElementById("eVis").textContent = e.vis;
+        document.getElementById("visBar").style.width =
+          Math.min(100, Math.max(15, Math.random() * 50 + 32)) + "%";
+        document.getElementById("safetyNote").style.display =
+          type === "solar" ? "block" : "none";
+        updateCdown();
+      }
+      function switchMode(mode) {
+        curMode = mode;
+        document.getElementById("eBody").className =
+          "eclipse-body " + (mode === "solar" ? "solar-m" : "lunar-m");
+        document
+          .getElementById("solarTog")
+          .classList.toggle("active", mode === "solar");
+        document
+          .getElementById("lunarTog")
+          .classList.toggle("active", mode === "lunar");
+        const e = nextEclipse(mode);
+        selIdx = -1;
+        updateCard(e, mode);
+        renderList();
+      }
+
+      // ═══════════════════════════════════════════════════
+      //  ECLIPSE LIST
+      // ═══════════════════════════════════════════════════
+      function renderList() {
+        const l = listMode === "solar" ? SOLAR : LUNAR,
+          n = new Date();
+        document.getElementById("eclipseList").innerHTML = l
+          .map((e, i) => {
+            const past = new Date(e.date) < n,
+              sel = selIdx === i && listMode === curMode;
+            const bc =
+              e.type.toLowerCase() === "total"
+                ? "total"
+                : e.type.toLowerCase() === "annular"
+                  ? "annular"
+                  : e.type.toLowerCase() === "penumbral"
+                    ? "penumbral"
+                    : "partial";
+            return `<div class="eclipse-item${sel ? " selected" : ""}" onclick="selectE(${i})">
+      <div class="ei-icon">${e.icon}</div>
+      <div class="ei-body">
+        <div class="ei-date"${past ? ' style="opacity:.42"' : ""}>${e.label}</div>
+        <div class="ei-type">${e.type} ${listMode === "solar" ? "Solar" : "Lunar"} Eclipse</div>
+        <div class="ei-loc">${e.vis.substring(0, 52)}</div>
+      </div>
+      <div class="ei-badge ${bc}">${e.type}</div>
+    </div>`;
+          })
+          .join("");
+      }
+      function switchList(mode) {
+        listMode = mode;
+        selIdx = -1;
+        document
+          .getElementById("lstSolBtn")
+          .classList.toggle("active", mode === "solar");
+        document
+          .getElementById("lstLunBtn")
+          .classList.toggle("active", mode === "lunar");
+        renderList();
+      }
+      function selectE(i) {
+        const l = listMode === "solar" ? SOLAR : LUNAR,
+          e = l[i];
+        selIdx = i;
+        curMode = listMode;
+        document.getElementById("eBody").className =
+          "eclipse-body " + (listMode === "solar" ? "solar-m" : "lunar-m");
+        document
+          .getElementById("solarTog")
+          .classList.toggle("active", listMode === "solar");
+        document
+          .getElementById("lunarTog")
+          .classList.toggle("active", listMode === "lunar");
+        updateCard(e, listMode);
+        renderList();
+        previewByDate(e.date, e.label);
+      }
+
+      // ═══════════════════════════════════════════════════
+      //  PREVIEW
+      // ═══════════════════════════════════════════════════
+      function previewEclipse() {
+        const l = curMode === "solar" ? SOLAR : LUNAR,
+          e = selIdx >= 0 ? l[selIdx] : nextEclipse(curMode);
+        previewByDate(e.date, e.label);
+      }
+      function previewByDate(ds, lbl) {
+        previewDt = new Date(ds);
+        document.getElementById("previewBanner").classList.add("vis");
+        document.getElementById("previewDate").textContent = lbl;
+        document.getElementById("orreryLbl").textContent = "Preview — " + lbl;
+        const mp = moonPhase(previewDt),
+          pi = phaseName(mp);
+        document.getElementById("sPhase").textContent =
+          pi.e + " " + pi.n.split(" ").slice(-1)[0];
+        document.getElementById("sESDist").textContent =
+          (esDist(previewDt) * 149.6).toFixed(1) + "M km";
+        document.getElementById("sEMDist").textContent =
+          emDist(previewDt).toLocaleString() + " km";
+        document.getElementById("sAlign").textContent = alignStr(mp);
+      }
+      function resetToNow() {
+        previewDt = null;
+        selIdx = -1;
+        document.getElementById("previewBanner").classList.remove("vis");
+        document.getElementById("orreryLbl").textContent =
+          "Live — present moment";
+        renderList();
+      }
+
+      // ═══════════════════════════════════════════════════
+      //  PHASES STRIP
+
+      function renderPhases() {
+        const n = new Date(),
+          p = moonPhase(n);
+        const PH = [
+          { e: "🌑", n: "New Moon", v: 0 },
+          { e: "🌒", n: "Waxing Crescent", v: 0.125 },
+          { e: "🌓", n: "First Quarter", v: 0.25 },
+          { e: "🌔", n: "Waxing Gibbous", v: 0.375 },
+          { e: "🌕", n: "Full Moon", v: 0.5 },
+          { e: "🌖", n: "Waning Gibbous", v: 0.625 },
+          { e: "🌗", n: "Last Quarter", v: 0.75 },
+          { e: "🌘", n: "Waning Crescent", v: 0.875 },
+        ];
+        let ci = 0,
+          md = 1;
+        PH.forEach((ph, i) => {
+          let d = Math.abs(p - ph.v);
+          if (d > 0.5) d = 1 - d;
+          if (d < md) {
+            md = d;
+            ci = i;
+          }
+        });
+        document.getElementById("phaseStrip").innerHTML = PH.map(
+          (ph, i) =>
+            `<span class="phase-glyph${i === ci ? " now" : ""}" title="${ph.n}">${ph.e}</span>`,
+        ).join("");
+        const pi = phaseName(p);
+        document.getElementById("phaseDesc").textContent =
+          `Currently: ${pi.n} — ${Math.round(p * 100)}% through the synodic month`;
+      }
+
+      //  SEARCH & LOCATION
+      const SI = document.getElementById("searchInput"),
+        SD = document.getElementById("searchDrop");
+      SI.addEventListener("input", function () {
+        const q = this.value.toLowerCase().trim();
+        if (q.length < 2) {
+          SD.classList.remove("open");
+          return;
+        }
+        const m = LOC.filter((l) => l.n.toLowerCase().includes(q)).slice(0, 18);
+        if (!m.length) {
+          SD.classList.remove("open");
+          return;
+        }
+        SD.innerHTML = m
+          .map(
+            (l) =>
+              `<div class="drop-item" onclick="selLoc('${l.n}',${l.lat},${l.lon})"><span>${l.n}</span><span class="drop-tag">${l.r}</span></div>`,
+          )
+          .join("");
+        SD.classList.add("open");
+      });
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".search-wrap")) SD.classList.remove("open");
+      });
+      function selLoc(n, lat, lon) {
+        SI.value = n;
+        SD.classList.remove("open");
+        setLoc(lat, lon, n);
+      }
+      function setLoc(lat, lon, name) {
+        uLat = lat;
+        uLon = lon;
+        uName = name;
+        document.getElementById("locVal").textContent =
+          `${name} (${lat.toFixed(2)}°, ${lon.toFixed(2)}°)`;
+        updateCard(nextEclipse(curMode), curMode);
+      }
+      function requestGeo() {
+        if (!navigator.geolocation) {
+          setLoc(27.7, 85.3, "Kathmandu, Nepal");
+          return;
+        }
+        document.getElementById("locVal").textContent = "⟳ Detecting…";
+        navigator.geolocation.getCurrentPosition(
+          (p) => revGeo(p.coords.latitude, p.coords.longitude),
+          () => setLoc(27.7, 85.3, "Kathmandu, Nepal"),
+          { timeout: 8000 },
+        );
+      }
+      async function revGeo(lat, lon) {
+        try {
+          const r = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+          );
+          const d = await r.json();
+          const city =
+            d.address?.city || d.address?.town || d.address?.county || "";
+          const country = d.address?.country || "";
+          setLoc(
+            lat,
+            lon,
+            [city, country].filter(Boolean).join(", ") || `${lat.toFixed(2)}°`,
+          );
+        } catch {
+          setLoc(lat, lon, `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`);
+        }
+      }
+
+      //  TABS
+      function showTab(id, btn) {
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach((b) => b.classList.remove("active"));
+        document
+          .querySelectorAll(".tab-pane")
+          .forEach((p) => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("tab-" + id).classList.add("active");
+      }
+
+      //  INIT
+      switchMode("solar");
+      renderList();
+      renderPhases();
+      requestGeo();
+    </script>
+  </body>
+</html>
